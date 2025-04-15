@@ -1,6 +1,10 @@
 import pygame
 import random
 
+from data.pokemon_data import pokemon_data
+from maps.game_maps import telas
+from sprites_data.sprites_loader import obter_sprite_pokemon, carregar_sprite, carregar_todos_bioma_sprites, sprite_encontro_tamanho, bioma_sprites, pokemon_sprites
+
 # Inicialização do Pygame
 pygame.init()
 
@@ -30,40 +34,21 @@ CINZA_CLARO = (220, 220, 220)
 VERMELHO = (255, 0, 0)
 BRANCO = (255, 255, 255)
 
-'''criar outros biomas, 
-bioma - criar rio (deferente da agua, que seria maior), pokes tipo agua e gelo
-bioma - criar um jardim pokemons veneno e fada
-bioma - criar uma praia(areia) pokemons tipo dragao e psquico
-
-
-tipo escuro e fantasma encontrados em - mansao assombrada e cemiterio
-tipo metal e eletrico encontrados em -  estacao de trem
-tipo inseto, veneno, voador encontrados em - florestas
-tipo pedra encontrados em - montanhas e cavernas
-tipo solo e lutador encontrado no - solo
-tipo gelo(lendarios de gelo) - montanha gelada e no rio
-tipo grama - encontados em - gramas
-tipo normal em qualquer lugar?(mudar isso)
-
-
-add pokemons de acordo com o tipo de raridade
-comum | incomum | raro | super raro | mitico | extintos |lendario
-90%  |   85%   |  60% |     45%    |   20%  |    10%    |  3%   
-
-o jogador ganha dinheiro capturando pokemons e um npc deve aparecer no mapa com itens
-inclicive pokebolas e itens de evoluçao aleatorio os itens
-
-add inventario
-add pokedex com os numeros do pokemons como base
-
-add banco um possivel banco de dados
 '''
+* agua - pokemons tipo agua
+* rio - pokemons tipo agua(pokes diferente do bioma agua) e gelo
+* jardim - pokemons tipo veneno e fada
+* praia - pokemons tipo dragao e psiquico
+* mansao assombrada e cemiterio - pokemons tipo escuro e fantasma
+* estaçao de trem - pokemons metal e eletrico
+* florestas - pokemons tipo veneno(pokes diferente do bioma jardim), voador e inseto 
+* montanhas e cavernas  - pokemons tipo pedra
+* solo - pokemons tipo solo e lutador
+* montanha gelada e o rio - pokemons de gelo
+* grama - pokemons tipo grama
+* qualquer? - pokemons tipo normal
 
-# Dicionário para armazenar os sprites redimensionados
-pokemon_sprites = {}
-bioma_sprites = {} # Novo dicionário para sprites de bioma
-sprite_tamanho_padrao = (96, 96)
-sprite_encontro_tamanho = (128, 128)
+'''
 
 # Fontes
 fonte_normal = pygame.font.Font(None, 36)
@@ -81,185 +66,25 @@ player_height = player_frame_height * player_scale
 player_frame_index = 0
 player_num_frames = 1
 
+
 # Função para obter o frame do jogador
 def get_player_frame(frame_index):
     frame = player_sprite_sheet
     return pygame.transform.scale(frame, (player_width, player_height))
 
-# Função para carregar um sprite
-def carregar_sprite(caminho, tamanho):
-    try:
-        sprite = pygame.image.load(caminho).convert_alpha()
-        return pygame.transform.scale(sprite, tamanho)
-    except pygame.error as e:
-        print(f"Erro ao carregar sprite {caminho}: {e}")
-        return None
-
-# Função para carregar e redimensionar sprites de bioma
-def carregar_bioma_sprite(caminho, tamanho_tile):
-    try:
-        sprite = pygame.image.load(caminho).convert_alpha()
-        # Redimensionar para o tamanho do tile
-        return pygame.transform.scale(sprite, (tamanho_tile, tamanho_tile))
-    except pygame.error as e:
-        print(f"Erro ao carregar sprite de bioma {caminho}: {e}")
-        return None
-
-pokemon_sprites = {}
-
-def obter_sprite_pokemon(nome_pokemon, eh_shiny=False, para_encontro=False):
-    data = pokemon_data.get(nome_pokemon.lower())
-    if data:
-        nome_arquivo = data["sprite_shiny"] if eh_shiny and data.get("sprite_shiny") else data["sprite"]
-        caminho = f"sprites/{nome_arquivo}"
-        sprite_carregado = pokemon_sprites.get(caminho)
-        tamanho = sprite_encontro_tamanho if para_encontro else sprite_tamanho_padrao
-        if sprite_carregado is None or sprite_carregado.get_size() != tamanho:
-            sprite_carregado = carregar_sprite(caminho, tamanho)
-            pokemon_sprites[caminho] = sprite_carregado
-        return sprite_carregado
-    return None
 
 # Carregar sprites iniciais de Pokémon
-pokemon_sprites["bulbasaur_front.png"] = carregar_sprite(f"sprites/bulbasaur_front.png", sprite_tamanho_padrao)
-pokemon_sprites["charmander_front.png"] = carregar_sprite(f"sprites/charmander_front.png", sprite_tamanho_padrao)
-pokemon_sprites["squirtle_front.png"] = carregar_sprite(f"sprites/squirtle_front.png", sprite_tamanho_padrao)
-pokemon_sprites["gastly_front.png"] = carregar_sprite(f"sprites/gastly_front.png", sprite_tamanho_padrao)
-pokemon_sprites["mewtwo_front.png"] = carregar_sprite(f"sprites/mewtwo_front.png", sprite_tamanho_padrao)
+pokemon_sprites = {}
+pokemon_sprites["bulbasaur_front.png"] = carregar_sprite(f"sprites/bulbasaur_front.png", (96,96))
+pokemon_sprites["charmander_front.png"] = carregar_sprite(f"sprites/charmander_front.png", (96,96))
+pokemon_sprites["squirtle_front.png"] = carregar_sprite(f"sprites/squirtle_front.png", (96,96))
+pokemon_sprites["gastly_front.png"] = carregar_sprite(f"sprites/gastly_front.png", (96,96))
+pokemon_sprites["mewtwo_front.png"] = carregar_sprite(f"sprites/mewtwo_front.png", (96,96))
 
-# Dados dos Pokémon (sem alterações)
-pokemon_data = {
-    "bulbasaur": {
-        "tipo": ["grama"],
-        "fraquezas": ["voador", "fogo", "psiquico", "gelo"],
-        "resistencias": ["lutador", "agua", "grama", "eletrico", "fada"],
-        "imunidades": [],
-        "raridade": "comum",
-        "taxa_captura": 0.8,
-        "number": "0001",
-        "biomas": ["floresta", "grama"],
-        "sprite": "bulbasaur_front.png",
-        "sprite_shiny": "shiny_bulbasaur_front.png",
-        "nivel": 5,
-        "shiny": False,
-    },
 
-    "charmander": {
-        "tipo": ["fogo"],
-        "fraquezas": ["solo", "pedra", "agua"],
-        "resistencias": ["inseto", "metal", "fogo", "grama", "gelo", "fada"],
-        "imunidades": [],
-        "raridade": "comum",
-        "taxa_captura": 0.8,
-        "number": "0004",
-        "biomas": ["montanha", "solo"],
-        "sprite": "charmander_front.png",
-        "sprite_shiny": "shiny_charmander_front.png",
-        "nivel": 5,
-        "shiny": False,
-    },
-    "squirtle": {
-        "tipo": ["agua"],
-        "fraquezas": ["grama", "eletrico"],
-        "resistencias": ["metal", "fogo", "agua", "gelo"],
-        "imunidades": [],
-        "raridade": "comum",
-        "taxa_captura": 0.85,
-        "number": "0007",
-        "biomas": ["agua"],
-        "sprite": "squirtle_front.png",
-        "sprite_shiny": "shiny_squirtle_front.png",
-        "nivel": 5,
-        "shiny": False,
-    },
-    "gastly": {
-        "tipo": ["fantasma", "veneno"],
-        "fraquezas": ["fantasma", "psiquico", "escuro"],
-        "resistencias": ["veneno", "inseto", "grama", "fada"],
-        "imunidades": ["normal", "lutador", "solo"],
-        "raridade": "raro",
-        "taxa_captura": 0.4,
-        "number": "0092",
-        "biomas": ["caverna", "cemiterio",],
-        "sprite": "gastly_front.png",
-        "sprite_shiny": "shiny_gastly_front.png",
-        "nivel": 10,
-        "shiny": False,
-    },
-    "mewtwo": {
-        "tipo": ["psiquico"],
-        "fraquezas": ["inseto", "fantasma", "escuro"],
-        "resistencias": ["lutador", "psiquico"],
-        "imunidades": [],
-        "raridade": "lendario",
-        "taxa_captura": 0.05,
-        "number": "0150",
-        "biomas": ["montanha"],
-        "sprite": "mewtwo_front.png",
-        "sprite_shiny": "shiny_mewtwo_front.png",
-        "nivel": 70,
-        "shiny": False,
-    },
-}
-
-# Estrutura para as telas (sem alterações)
-class Tela:
-    def __init__(self, mapa, pokemons_disponiveis):
-        self.mapa = mapa
-        self.pokemons_disponiveis = pokemons_disponiveis
-
-# Mapas das telas (sem alterações)
-mapa_tela1 = [
-    ["solo", "solo", "solo", "solo", "solo"],
-    ["solo", "grama", "agua", "grama", "solo"],
-    ["solo", "grama", "grama", "grama", "solo"],
-    ["solo", "grama", "agua", "grama", "solo"],
-    ["solo", "solo", "solo", "solo", "solo"],
-]
-pokemons_tela1 = ["charmander", "squirtle"]
-
-mapa_tela2 = [ # Cima
-    ["montanha", "montanha", "montanha", "montanha", "montanha"],
-    ["solo", "caverna", "caverna", "caverna", "solo"],
-    ["solo", "grama", "grama", "grama", "solo"],
-    ["solo", "solo", "solo", "solo", "solo"],
-    ["solo", "solo", "solo", "solo", "agua"],
-]
-pokemons_tela2 = ["charmander","squirtle","gastly", "mewtwo"]
-
-mapa_tela3 = [ # Direita
-    ["floresta", "montanha", "montanha", "montanha", "montanha"],
-    ["floresta", "grama", "grama", "grama", "grama"],
-    ["floresta", "solo", "solo", "solo", "solo"],
-    ["floresta", "mansao assombrada", "grama", "grama", "estacao de trem"],
-]
-pokemons_tela3 = ["charmander", "bulbasaur"]
-
-mapa_tela4 = [ # Baixo 
-    ["solo", "solo", "solo", "solo", "solo"],
-    ["jardim", "jardim", "solo", "agua", "agua"],
-    ["praia", "praia", "praia", "praia", "praia"],
-    ["praia", "rio", "rio", "rio", "praia"],
-]
-pokemons_tela4 = ["squirtle"]
-
-mapa_tela5 = [ # Esquerda
-    ["montanha_gelada", "montanha_gelada", "montanha_gelada", "montanha_gelada", "montanha_gelada"],
-    ["solo", "floresta", "cemiterio", "floresta", "solo"],
-    ["solo", "floresta", "cemiterio", "floresta", "solo"],
-    ["solo", "floresta", "cemiterio", "floresta", "solo"],
-    ["solo", "solo", "solo", "solo", "solo"],
-]
-pokemons_tela5 = ["charmander", "bulbasaur","gastly"]
-
-# Dicionário para armazenar as telas (sem alterações)
-telas = {
-    1: Tela(mapa_tela1, pokemons_tela1),
-    2: Tela(mapa_tela2, pokemons_tela2),
-    3: Tela(mapa_tela3, pokemons_tela3),
-    4: Tela(mapa_tela4, pokemons_tela4),
-    5: Tela(mapa_tela5, pokemons_tela5),
-}
+# Carregar todos os sprites de bioma UMA VEZ
+tamanho_base_bioma = 216 # Um tamanho base razoável para carregar todos os biomas inicialmente
+bioma_sprites_cache = carregar_todos_bioma_sprites(tamanho_base_bioma)
 
 # Tela atual (sem alterações)
 tela_atual = 1
@@ -269,7 +94,7 @@ pokemons_disponiveis_atual = telas[tela_atual].pokemons_disponiveis
 # Posição do jogador (sem alterações)
 jogador_x = largura // 2
 jogador_y = altura // 2
-velocidade_jogador = 42
+velocidade_jogador = 44
 
 # Variável de controle de encontro (sem alterações)
 pokemon_encontrado_atual = None
@@ -285,7 +110,7 @@ def encontrar_pokemon(bioma):
     if not possiveis_pokemon:
         return None
     chance_encontro = random.random()
-    if chance_encontro < 0.2:
+    if chance_encontro < 0.1:
         pokemon_encontrado = random.choice(possiveis_pokemon)
         if random.random() < 0.1:
             pokemon_data[pokemon_encontrado]["shiny"] = True
@@ -303,22 +128,6 @@ def encontrar_pokemon(bioma):
 # Loop principal
 rodando = True
 clock = pygame.time.Clock()
-
-# Carregar o sprite da floresta (agora fora do loop para carregar apenas uma vez)
-floresta_sprite = carregar_bioma_sprite("biomas/floresta.png", largura // len(mapa_atual[0])) # Usando a largura do tile como base
-agua_sprite = carregar_bioma_sprite("biomas/agua.png", largura // len(mapa_atual[0]))
-grama_sprite = carregar_bioma_sprite("biomas/grama.png", largura // len(mapa_atual[0]))
-solo_sprite = carregar_bioma_sprite("biomas/solo.png", largura // len(mapa_atual[0]))
-cemiterio_sprite = carregar_bioma_sprite("biomas/cemiterio.png", largura // len(mapa_atual[0]))
-montanha_sprite = carregar_bioma_sprite("biomas/montanha.png", largura // len(mapa_atual[0]))
-montanha_gelada_sprite = carregar_bioma_sprite("biomas/montanha_gelada.png", largura // len(mapa_atual[0]))
-estacao_de_trem_sprite = carregar_bioma_sprite("biomas/estacao_de_trem.jpg", largura // len(mapa_atual[0]))
-mansao_assombrada_sprite = carregar_bioma_sprite("biomas/mansao_assombrada.jpg", largura // len(mapa_atual[0]))
-rio_sprite = carregar_bioma_sprite("biomas/rio.jpg", largura // len(mapa_atual[0]))
-praia_sprite = carregar_bioma_sprite("biomas/praia.jpg", largura // len(mapa_atual[0]))
-jardim_sprite = carregar_bioma_sprite("biomas/jardim.jpg", largura // len(mapa_atual[0]))
-caverna_sprite = carregar_bioma_sprite("biomas/caverna.jpg", largura // len(mapa_atual[0]))
-
 
 while rodando:
     for evento in pygame.event.get():
@@ -339,8 +148,10 @@ while rodando:
                 # Tentar encontrar Pokémon (sem alterações)
                 tile_largura = largura // len(mapa_atual[0])
                 tile_altura = altura // len(mapa_atual)
+
                 coluna_jogador_atual = int(jogador_x // tile_largura)
                 linha_jogador_atual = int(jogador_y // tile_altura)
+
                 if 0 <= linha_jogador_atual < len(mapa_atual) and 0 <= coluna_jogador_atual < len(mapa_atual[0]):
                     bioma_atual = mapa_atual[linha_jogador_atual][coluna_jogador_atual]
                     print(f"Bioma Atual (Movimento): {bioma_atual}")
@@ -375,6 +186,9 @@ while rodando:
 
     tile_largura = largura // len(mapa_atual[0])
     tile_altura = altura // len(mapa_atual)
+
+    # bioma_sprites = load_bioma_sprites(tile_largura)
+
     for y, linha in enumerate(mapa_atual):
         for x, tile in enumerate(linha):
             cor = (100, 200, 100) if tile == "grama" else \
@@ -391,38 +205,14 @@ while rodando:
                   AMARELO_CLARO if tile == "praia" else \
                   VERDE_MEIO # jardim
 
-            # Desenhando os sprites dos biomas
-            if tile == "floresta" and floresta_sprite:
-                tela.blit(floresta_sprite, (x * tile_largura, y * tile_altura))
-            elif tile == "agua" and agua_sprite:
-                tela.blit(agua_sprite, (x * tile_largura, y * tile_altura))
-            elif tile == "grama" and grama_sprite:
-                tela.blit(grama_sprite, (x * tile_largura, y * tile_altura))
-            elif tile == "solo" and solo_sprite:
-                tela.blit(solo_sprite, (x * tile_largura, y * tile_altura))
-            elif tile == "montanha" and montanha_sprite:
-                tela.blit(montanha_sprite, (x * tile_largura, y * tile_altura))
-            elif tile == "cemiterio" and cemiterio_sprite:
-                tela.blit(cemiterio_sprite, (x * tile_largura, y * tile_altura))
-            elif tile == "montanha_gelada" and montanha_gelada_sprite:
-                tela.blit(montanha_gelada_sprite, (x * tile_largura, y * tile_altura))
-            elif tile == ("estacao de trem") and estacao_de_trem_sprite:
-                tela.blit(estacao_de_trem_sprite, (x * tile_largura, y * tile_altura))
-            elif tile == ("mansao assombrada") and mansao_assombrada_sprite:
-                tela.blit(mansao_assombrada_sprite, (x * tile_largura, y * tile_altura))
-            elif tile == ("rio") and rio_sprite:
-                tela.blit(rio_sprite, (x * tile_largura, y * tile_altura))
-            elif tile == ("praia") and praia_sprite:
-                tela.blit(praia_sprite, (x * tile_largura, y * tile_altura))
-            elif tile == ("jardim") and jardim_sprite:
-                tela.blit(jardim_sprite, (x * tile_largura, y * tile_altura))
-            elif tile == ("caverna") and caverna_sprite:
-                tela.blit(caverna_sprite, (x * tile_largura, y * tile_altura))
-            # elif colocar os outros biomas aki
+            
+            # Desenhando os sprites dos biomas (agora usando o cache carregado)
+            if tile in bioma_sprites_cache and bioma_sprites_cache[tile]:
+                scaled_bioma_sprite = pygame.transform.scale(bioma_sprites_cache[tile], (tile_largura, tile_altura))
+                tela.blit(scaled_bioma_sprite, (x * tile_largura, y * tile_altura))
             else:
                 pygame.draw.rect(tela, cor, (x * tile_largura, y * tile_altura, tile_largura, tile_altura))
-        
-            # ---------------
+
 
             if x == 0 and y >= 0 and y < len(mapa_atual):
                 pygame.draw.rect(tela, PRETO, (x * tile_largura, y * tile_altura, 5, tile_altura))
