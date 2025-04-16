@@ -1,4 +1,4 @@
-# Dados dos Pokémon (sem alterações)
+# Dados dos Pokémon
 pokemon_data = {
     "bulbasaur": {
         "tipo": ["grama"],
@@ -29,6 +29,7 @@ pokemon_data = {
         "nivel": 5,
         "shiny": False,
     },
+
     "squirtle": {
         "tipo": ["agua"],
         "fraquezas": ["grama", "eletrico"],
@@ -43,6 +44,37 @@ pokemon_data = {
         "nivel": 5,
         "shiny": False,
     },
+
+    "caterpie": {
+        "tipo": ["inseto"],
+        "fraquezas": ["voador", "pedra", "fogo"],
+        "resistencias": ["lutador", "solo", "grama"],
+        "imunidades": [],
+        "raridade": "comum",
+        "taxa_captura": 0.85,
+        "number": "0010",
+        "biomas": ["floresta"],
+        "sprite": "./caterpie_front.png",
+        "sprite_shiny": "./shiny_caterpie_front.png",
+        "nivel": 5,
+        "shiny": False,
+    },
+
+    "sandshrew": {
+        "tipo": ["solo"],
+        "fraquezas": ["agua", "grama", "gelo"],
+        "resistencias": ["veneno", "pedra"],
+        "imunidades": ["eletrico"],
+        "raridade": "incomum",
+        "taxa_captura": 0.85,
+        "number": "0027",
+        "biomas": ["solo"],
+        "sprite": "./sandshrew_front.png",
+        "sprite_shiny": "./shiny_sandshrew_front.png",
+        "nivel": 5,
+        "shiny": False,
+    },
+
     "gastly": {
         "tipo": ["fantasma", "veneno"],
         "fraquezas": ["fantasma", "psiquico", "escuro"],

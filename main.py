@@ -3,7 +3,7 @@ import random
 
 from data.pokemon_data import pokemon_data
 from maps.game_maps import telas
-from sprites_data.sprites_loader import obter_sprite_pokemon, carregar_sprite, carregar_todos_bioma_sprites, sprite_encontro_tamanho, bioma_sprites, pokemon_sprites
+from sprites_data.sprites_loader import obter_sprite_pokemon, carregar_todos_bioma_sprites, encontrar_pokemon, sprite_encontro_tamanho
 
 # Inicialização do Pygame
 pygame.init()
@@ -75,12 +75,6 @@ def get_player_frame(frame_index):
 
 # Carregar sprites iniciais de Pokémon
 pokemon_sprites = {}
-pokemon_sprites["bulbasaur_front.png"] = carregar_sprite(f"sprites/bulbasaur_front.png", (96,96))
-pokemon_sprites["charmander_front.png"] = carregar_sprite(f"sprites/charmander_front.png", (96,96))
-pokemon_sprites["squirtle_front.png"] = carregar_sprite(f"sprites/squirtle_front.png", (96,96))
-pokemon_sprites["gastly_front.png"] = carregar_sprite(f"sprites/gastly_front.png", (96,96))
-pokemon_sprites["mewtwo_front.png"] = carregar_sprite(f"sprites/mewtwo_front.png", (96,96))
-
 
 # Carregar todos os sprites de bioma UMA VEZ
 tamanho_base_bioma = 216 # Um tamanho base razoável para carregar todos os biomas inicialmente
@@ -104,26 +98,7 @@ botao_correr_rect = pygame.Rect(largura // 4 + 20, 280, 150, 40)
 cor_botao = (200, 200, 200)
 cor_texto_botao = (0, 0, 0)
 
-# Função para encontrar Pokémon (sem alterações)
-def encontrar_pokemon(bioma):
-    possiveis_pokemon = [nome for nome in pokemons_disponiveis_atual if bioma in pokemon_data[nome]["biomas"] or "qualquer" in pokemon_data[nome]["biomas"]]
-    if not possiveis_pokemon:
-        return None
-    chance_encontro = random.random()
-    if chance_encontro < 0.1:
-        pokemon_encontrado = random.choice(possiveis_pokemon)
-        if random.random() < 0.1:
-            pokemon_data[pokemon_encontrado]["shiny"] = True
-            sprite_shiny = carregar_sprite(f"sprites/shiny_{pokemon_encontrado}_front.png", sprite_encontro_tamanho)
-            if sprite_shiny:
-                pokemon_data[pokemon_encontrado]["sprite_shiny_carregado"] = sprite_shiny
-            else:
-                pokemon_data[pokemon_encontrado]["sprite_shiny_carregado"] = None
-        else:
-            pokemon_data[pokemon_encontrado]["shiny"] = False
-            pokemon_data[pokemon_encontrado]["sprite_shiny_carregado"] = None
-        return pokemon_encontrado
-    return None
+
 
 # Loop principal
 rodando = True
@@ -156,20 +131,65 @@ while rodando:
                     bioma_atual = mapa_atual[linha_jogador_atual][coluna_jogador_atual]
                     print(f"Bioma Atual (Movimento): {bioma_atual}")
                     print(f"Pokémons Disponíveis (Movimento): {pokemons_disponiveis_atual}")
-                    pokemon_encontrado = encontrar_pokemon(bioma_atual)
+                    # pokemon_encontrado = encontrar_pokemon(bioma_atual)
+                    pokemon_encontrado = encontrar_pokemon(bioma_atual, pokemons_disponiveis_atual)
                     if pokemon_encontrado:
                         print(f"Pokémon Encontrado (Movimento): {pokemon_encontrado}")
                         pokemon_encontrado_atual = pokemon_encontrado
+                    
 
-                # Lógica de mudança de tela (sem alterações)
-                if jogador_x + player_width // 2 > largura and mapa_atual[linha_jogador_atual][len(mapa_atual[0]) - 1] == "solo": tela_atual, mapa_atual, pokemons_disponiveis_atual, jogador_x, pokemon_encontrado_atual = 3, telas[3].mapa, telas[3].pokemons_disponiveis, player_width // 2, None
-                elif jogador_x - player_width // 2 < 0 and mapa_atual[linha_jogador_atual][0] == "solo": tela_atual, mapa_atual, pokemons_disponiveis_atual, jogador_x, pokemon_encontrado_atual = 5, telas[5].mapa, telas[5].pokemons_disponiveis, largura - player_width // 2, None
-                elif jogador_y + player_height // 2 > altura and mapa_atual[len(mapa_atual) - 1][coluna_jogador_atual] == "solo": tela_atual, mapa_atual, pokemons_disponiveis_atual, jogador_y, pokemon_encontrado_atual = 4, telas[4].mapa, telas[4].pokemons_disponiveis, player_height // 2, None
-                elif jogador_y - player_height // 2 < 0 and mapa_atual[0][coluna_jogador_atual] == "solo": tela_atual, mapa_atual, pokemons_disponiveis_atual, jogador_y, pokemon_encontrado_atual = 2, telas[2].mapa, telas[2].pokemons_disponiveis, altura - player_height // 2, None
-                elif tela_atual == 2 and jogador_y + player_height // 2 > altura and mapa_atual[len(mapa_atual) - 1][coluna_jogador_atual] == "solo": tela_atual, mapa_atual, pokemons_disponiveis_atual, jogador_y, pokemon_encontrado_atual = 1, telas[1].mapa, telas[1].pokemons_disponiveis, player_height // 2, None
-                elif tela_atual == 3 and jogador_x - player_width // 2 < 0 and mapa_atual[linha_jogador_atual][0] == "floresta": tela_atual, mapa_atual, pokemons_disponiveis_atual, jogador_x, pokemon_encontrado_atual = 1, telas[1].mapa, telas[1].pokemons_disponiveis, largura - player_width // 2, None
-                elif tela_atual == 4 and jogador_y - player_height // 2 < 0 and mapa_atual[0][coluna_jogador_atual] == "agua": tela_atual, mapa_atual, pokemons_disponiveis_atual, jogador_y, pokemon_encontrado_atual = 1, telas[1].mapa, telas[1].pokemons_disponiveis, altura - player_height // 2, None
-                elif tela_atual == 5 and jogador_x + player_width // 2 > largura and mapa_atual[linha_jogador_atual][len(mapa_atual[0]) - 1] == "cemiterio": tela_atual, mapa_atual, pokemons_disponiveis_atual, jogador_x, pokemon_encontrado_atual = 1, telas[1].mapa, telas[1].pokemons_disponiveis, player_width // 2, None
+                # Lógica de mudança de tela
+                mudou_tela = False
+
+                # Tela 1
+                if tela_atual == 1:
+                    # Ir para a Tela 3 (Direita)
+                    if not mudou_tela and jogador_x + player_width // 2 > largura and mapa_atual[linha_jogador_atual][len(mapa_atual[0]) - 1] == "solo":
+                        tela_atual, mapa_atual, pokemons_disponiveis_atual, jogador_x, pokemon_encontrado_atual = 3, telas[3].mapa, telas[3].pokemons_disponiveis, player_width // 2, None
+                        mudou_tela = True
+
+                    # Ir para a Tela 5 (Esquerda)
+                    elif not mudou_tela and jogador_x - player_width // 2 < 0 and mapa_atual[linha_jogador_atual][0] == "solo":
+                        tela_atual, mapa_atual, pokemons_disponiveis_atual, jogador_x, pokemon_encontrado_atual = 5, telas[5].mapa, telas[5].pokemons_disponiveis, largura - player_width // 2, None
+                        mudou_tela = True
+
+                    # Ir para a Tela 4 (Baixo)
+                    elif not mudou_tela and jogador_y + player_height // 2 > altura and mapa_atual[len(mapa_atual) - 1][coluna_jogador_atual] == "solo":
+                        tela_atual, mapa_atual, pokemons_disponiveis_atual, jogador_y, pokemon_encontrado_atual = 4, telas[4].mapa, telas[4].pokemons_disponiveis, player_height // 2, None
+                        mudou_tela = True
+
+                    # Ir para a Tela 2 (Cima)
+                    elif not mudou_tela and jogador_y - player_height // 2 < 0 and mapa_atual[0][coluna_jogador_atual] == "solo":
+                        tela_atual, mapa_atual, pokemons_disponiveis_atual, jogador_y, pokemon_encontrado_atual = 2, telas[2].mapa, telas[2].pokemons_disponiveis, altura - player_height // 2, None
+                        mudou_tela = True
+
+                # Tela 2
+                elif tela_atual == 2:
+                    # Voltar para a Tela 1 (Baixo)
+                    if not mudou_tela and jogador_y + player_height // 2 > altura and (mapa_atual[len(mapa_atual) - 1][coluna_jogador_atual] == "solo" or mapa_atual[len(mapa_atual) - 1][coluna_jogador_atual] == "agua"):
+                        tela_atual, mapa_atual, pokemons_disponiveis_atual, jogador_y, pokemon_encontrado_atual = 1, telas[1].mapa, telas[1].pokemons_disponiveis, player_height // 2, None
+                        mudou_tela = True
+
+                # Tela 3
+                elif tela_atual == 3:
+                    # Voltar para a Tela 1 (Esquerda)
+                    if not mudou_tela and jogador_x - player_width // 2 < 0 and mapa_atual[linha_jogador_atual][0] == "floresta":
+                        tela_atual, mapa_atual, pokemons_disponiveis_atual, jogador_x, pokemon_encontrado_atual = 1, telas[1].mapa, telas[1].pokemons_disponiveis, largura - player_width // 2, None
+                        mudou_tela = True
+
+                # Tela 4
+                elif tela_atual == 4:
+                    # Voltar para a Tela 1 (Cima)
+                    if not mudou_tela and jogador_y - player_height // 2 < 0 and mapa_atual[0][coluna_jogador_atual] == "solo":
+                        tela_atual, mapa_atual, pokemons_disponiveis_atual, jogador_y, pokemon_encontrado_atual = 1, telas[1].mapa, telas[1].pokemons_disponiveis, altura - player_height // 2, None
+                        mudou_tela = True
+
+                # Tela 5
+                elif tela_atual == 5:
+                    # Voltar para a Tela 1 (Direita)
+                    if not mudou_tela and jogador_x + player_width // 2 > largura and (mapa_atual[linha_jogador_atual][len(mapa_atual[0]) - 1] == "solo" or mapa_atual[linha_jogador_atual][len(mapa_atual[0]) - 1] == "montanha gelada"):
+                        tela_atual, mapa_atual, pokemons_disponiveis_atual, jogador_x, pokemon_encontrado_atual = 1, telas[1].mapa, telas[1].pokemons_disponiveis, player_width // 2, None
+                        mudou_tela = True
 
                 jogador_x = max(player_width // 2, min(jogador_x, largura - player_width // 2))
                 jogador_y = max(player_height // 2, min(jogador_y, altura - player_height // 2))
