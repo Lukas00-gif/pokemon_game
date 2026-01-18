@@ -3,7 +3,8 @@ import random
 
 from data.pokemon_data import pokemon_data
 from maps.game_maps import telas
-from sprites_data.sprites_loader import obter_sprite_pokemon, carregar_todos_bioma_sprites, encontrar_pokemon, sprite_encontro_tamanho
+from sprites_data.sprites_loader import obter_sprite_pokemon, carregar_todos_bioma_sprites, encontrar_pokemon, carregar_sprite , sprite_encontro_tamanho
+from inventario.inventory_logic import inicializar_inventario
 
 # Inicialização do Pygame
 pygame.init()
@@ -98,6 +99,12 @@ botao_correr_rect = pygame.Rect(largura // 4 + 20, 280, 150, 40)
 cor_botao = (200, 200, 200)
 cor_texto_botao = (0, 0, 0)
 
+# Botão de capturar
+botao_capturar_rect = pygame.Rect(largura // 4 + 20, 330, 150, 40)
+cor_botao_capturar = (50, 150, 50) # Um verde para destacar
+cor_texto_botao = (0, 0, 0)
+
+inventario, pokeball_sprites, inventario_rect, rects_abas = inicializar_inventario(largura, altura)
 
 
 # Loop principal
@@ -108,9 +115,16 @@ while rodando:
     for evento in pygame.event.get():
         if evento.type == pygame.QUIT:
             rodando = False
+
+            # --- DETECÇÃO DE TECLAS ---
         if evento.type == pygame.KEYDOWN:
-            if pokemon_encontrado_atual is None:
-                # Lógica de movimento do jogador (sem alterações)
+            # Tecla "I" para abrir/fechar o inventário
+            if evento.key == pygame.K_i:
+                inventario["aberto"] = not inventario["aberto"]
+                print(f"Inventário aberto: {inventario['aberto']}")
+
+            # Só permite movimentação se o inventário estiver FECHADO
+            if not inventario["aberto"] and pokemon_encontrado_atual is None:
                 if evento.key == pygame.K_RIGHT:
                     jogador_x += velocidade_jogador
                 elif evento.key == pygame.K_LEFT:
@@ -119,6 +133,7 @@ while rodando:
                     jogador_y += velocidade_jogador
                 elif evento.key == pygame.K_UP:
                     jogador_y -= velocidade_jogador
+
 
                 # Tentar encontrar Pokémon (sem alterações)
                 tile_largura = largura // len(mapa_atual[0])
@@ -194,11 +209,25 @@ while rodando:
                 jogador_x = max(player_width // 2, min(jogador_x, largura - player_width // 2))
                 jogador_y = max(player_height // 2, min(jogador_y, altura - player_height // 2))
 
+        #evento para mudar de tela do inventario
         elif evento.type == pygame.MOUSEBUTTONDOWN:
-            if evento.button == 1 and pokemon_encontrado_atual:
-                if botao_correr_rect.collidepoint(evento.pos):
-                    print(f"Você correu de {pokemon_encontrado_atual}!")
-                    pokemon_encontrado_atual = None
+            if evento.button == 1: # Clique com botão esquerdo
+                if inventario["aberto"]:
+                    # Pegamos a posição do mouse no momento do clique
+                    pos_mouse = pygame.mouse.get_pos()
+                    
+                    # CORREÇÃO: Alterar a chave dentro do dicionário 'inventario'
+                    if rects_abas["pokebolas"].collidepoint(pos_mouse):
+                        inventario["aba_ativa"] = "pokebolas"
+                    elif rects_abas["pokedex"].collidepoint(pos_mouse):
+                        inventario["aba_ativa"] = "pokedex"
+                    elif rects_abas["pokemon"].collidepoint(pos_mouse):
+                        inventario["aba_ativa"] = "pokemon"
+                
+                elif pokemon_encontrado_atual:
+                    if botao_correr_rect.collidepoint(evento.pos):
+                        pokemon_encontrado_atual = None
+
 
     player_current_frame = get_player_frame(player_frame_index)
 
@@ -276,6 +305,83 @@ while rodando:
         texto_correr = fonte_botao.render("Correr", True, cor_texto_botao)
         texto_rect_correr = texto_correr.get_rect(center=botao_correr_rect.center)
         tela.blit(texto_correr, texto_rect_correr)
+
+        # --- INÍCIO: Desenhar o inventário ---
+    if inventario["aberto"]:
+
+        # 1. Desenhar o fundo e borda usando o inventario_rect que veio da função
+        pygame.draw.rect(tela, (220, 220, 220), inventario_rect) # Cor cinza claro
+        pygame.draw.rect(tela, (0, 0, 0), inventario_rect, 2)    # Borda preta
+
+        # 2. Função auxiliar para desenhar as abas (agora usando o dicionário inventario)
+        def desenhar_aba_nova(rect, texto, chave_aba):
+            # Verifica se esta aba é a que está ativa no dicionário
+            ativa = (inventario["aba_ativa"] == chave_aba)
+            cor = (180, 180, 180) if ativa else (200, 200, 200)
+            
+            pygame.draw.rect(tela, cor, rect)
+            pygame.draw.rect(tela, (0, 0, 0), rect, 1) # Bordinha da aba
+            
+            txt = fonte_normal.render(texto, True, (0, 0, 0))
+            txt_rect = txt.get_rect(center=rect.center)
+            tela.blit(txt, txt_rect)
+
+        # Desenhar as abas usando os Rects que estão no dicionário rects_abas
+        desenhar_aba_nova(rects_abas["pokebolas"], "Pokébolas", "pokebolas")
+        desenhar_aba_nova(rects_abas["pokedex"], "Pokédex", "pokedex")
+        desenhar_aba_nova(rects_abas["pokemon"], "Pokémon", "pokemon")
+
+        # 3. Configurações de conteúdo
+        conteudo_x = inventario_rect.left + 20
+        conteudo_y = inventario_rect.top + 60 # 40 da aba + 20 de margem
+        espacamento_y = 40
+
+        # --- Lógica de exibição por Aba ---
+        aba_atual = inventario["aba_ativa"]
+
+        if aba_atual == "pokebolas":
+            titulo = fonte_normal.render("Suas Pokébolas", True, (0, 0, 0))
+            tela.blit(titulo, (conteudo_x, conteudo_y))
+            
+            y_offset = conteudo_y + espacamento_y
+            for nome, quantidade in inventario["pokebolas_data"].items():
+                sprite = pokeball_sprites.get(nome)
+                if sprite:
+                    tela.blit(sprite, (conteudo_x + 10, y_offset))
+                    txt_qtd = fonte_normal.render(f"x{quantidade}", True, (0, 0, 0))
+                    tela.blit(txt_qtd, (conteudo_x + 60, y_offset + 5))
+                    y_offset += espacamento_y
+
+        elif aba_atual == "pokedex":
+            capturados = inventario["pokemon_capturados"]
+            txt_cap = fonte_normal.render(f"Capturados: {len(capturados)}", True, (0, 0, 0))
+            tela.blit(txt_cap, (conteudo_x, conteudo_y))
+            
+            txt_party_info = fonte_normal.render(f"Na Party: {len(inventario['party_atual'])}/6", True, (0, 0, 0))
+            tela.blit(txt_party_info, (conteudo_x, conteudo_y + espacamento_y))
+            
+            if capturados:
+                y_lista = conteudo_y + (espacamento_y * 2)
+                for i, p_nome in enumerate(capturados):
+                    txt_p = fonte_normal.render(f"- {p_nome.capitalize()}", True, (0, 0, 0))
+                    tela.blit(txt_p, (conteudo_x + 20, y_lista + i * 30))
+            else:
+                txt_vazio = fonte_normal.render("Pokédex vazia.", True, (0, 0, 0))
+                tela.blit(txt_vazio, (conteudo_x, conteudo_y + (espacamento_y * 2)))
+
+        elif aba_atual == "pokemon":
+            party = inventario["party_atual"]
+            titulo_party = fonte_normal.render("Sua Equipe:", True, (0, 0, 0))
+            tela.blit(titulo_party, (conteudo_x, conteudo_y))
+            
+            if party:
+                for i, p_nome in enumerate(party):
+                    txt_p = fonte_normal.render(f"{i+1}. {p_nome.capitalize()}", True, (0, 0, 0))
+                    tela.blit(txt_p, (conteudo_x + 20, conteudo_y + espacamento_y + i * 35))
+            else:
+                txt_vazio = fonte_normal.render("Sua party está vazia.", True, (0, 0, 0))
+                tela.blit(txt_vazio, (conteudo_x, conteudo_y + espacamento_y))
+
 
     pygame.display.flip()
     clock.tick(60)
